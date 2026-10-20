@@ -1,0 +1,37 @@
+# Levanta los tres servicios con un solo comando:  docker compose up --build
+# (Opcion Docker. Si no usan Docker, ver scripts/dev.* para modo local.)
+services:
+  # --- SQL Server ---
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "TuPasswordAqui123"   # debe coincidir con el .env del backend
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+  # --- Backend FastAPI ---
+  backend:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_SERVER: sqlserver        # dentro de la red de docker, el host es el nombre del servicio
+      FRONTEND_ORIGIN: http://localhost:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      - sqlserver
+
+  # --- Frontend React (modo preview del build) ---
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mssql_data:
